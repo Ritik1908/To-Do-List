@@ -1,9 +1,18 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<title>To Do List</title>
-</head>
-<body>
-	<h1>It's <%= dayOfWeek %>.</h1>
-</body>
-</html>
+<%- include("header") -%>
+	<div class="box" id="heading">
+		<h1>It's <%= listName %>.</h1>
+	</div>
+
+	<div class="box">
+			<% for(var i = 0; i < newListItems.length; i++) { %>
+				<div class="item">
+					<input type="checkbox">
+					<p><%= newListItems[i] %></p>
+				</div>
+			<% } %>
+		<form class="item" action = "/" method="POST">
+			<input type = "text" name="newItem" placeholder="Enter New Item" autocomplete="off">
+			<button type = "submit" name="listName" value='<%= listName %>'>+</button>
+		</form>
+	</div>
+<%- include("footer") -%>
