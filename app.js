@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const _ = require("lodash")
 
 
 const app = express();
@@ -36,6 +37,13 @@ const work3 = new Item({
 
 const defaultItems = [work1, work2, work3];
 
+const listSchema = {
+	name: String,
+	items: [itemSchema]
+};
+
+const List = mongoose.model("List", listSchema);
+
 // Item.insertMany(defaultItems, function(err) {
 // 	if(err) {
 // 		console.log(err);
@@ -54,6 +62,7 @@ app.get("/", function(req, res){
 					console.log("Successfully Added");
 				}
 			});
+
 			res.redirect("/");
 		}
 
@@ -61,24 +70,78 @@ app.get("/", function(req, res){
 			console.log(err);
 		} else {
 			res.render("list", {listName: "Today", newListItems: result});
-			console.log(result);
+			// console.log(result);
 		}
 	})
 });
 
 app.post("/", function(req, res){
-	let Item = req.body.newItem;
-	if(req.body.listName == "Work List") {
-		workItem.push(Item);
-		res.redirect("/work");
-	} else {
-		newItem.push(Item);
+	const listName = req.body.listName;
+	const itemName = req.body.newItem;
+
+	const item = new Item({
+		name: itemName
+	});
+
+	if(listName === "Today"){
+		item.save();
 		res.redirect("/");
+	} else {
+			List.findOne({name: listName}, function(err, foundList){
+			foundList.items.push(item);
+			foundList.save();
+			res.redirect("/"+listName);
+		})
+	}
+
+
+});
+
+app.post("/delete", function(req, res){
+	const itemId = req.body.checkbox;
+	const listName = req.body.listName;
+
+	if(listName === "Today") {
+	 	Item.findByIdAndRemove(itemId, function(err){
+			if(err) {
+				console.log(err);
+			} else {
+				res.redirect("/");
+			}
+		});
+	} else {
+		List.findOneAndUpdate(
+			{name: listName},
+			{$pull: {items: {_id: itemId}}},
+			function(err, foundList) {
+				if(!err){
+					res.redirect("/"+listName);
+				}
+			}
+		);
 	}
 });
 
-app.get("/work", function(req, res) {
-	res.render("list", {listName: "Work List", newListItems: workItem});
+app.get("/:listName", function(req, res) {
+	// const customListName = _.capitalize(req.params.listName);
+	const customListName = req.params.listName;
+
+	List.findOne({name: customListName}, function(err, foundList){
+		if(err) {
+			console.log(err);
+		} else {
+			if(!foundList) {
+				const list = new List({
+					name: customListName,
+					items: defaultItems
+				});
+				list.save();
+				res.redirect("/"+customListName);s
+			} else {
+				res.render("list", {listName: foundList.name, newListItems: foundList.items})
+			}
+		}
+	});
 });
 
 app.listen(3000, function() {
